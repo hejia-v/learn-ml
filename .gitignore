@@ -1,0 +1,6 @@
+/.vscode
+/notebook/.ipynb_checkpoints
+.ipynb_checkpoints
+/tmp
+/notebook/untitled*
+
