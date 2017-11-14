@@ -50,8 +50,8 @@ class Layer(object):
         self.weight = W  # 权重矩阵
         self.bias = b  # 偏置
         print(f'Layer: {order}, last_layer_dim={last_layer_dim}, dim={dim}')
-        print(f'W :\n {W}')
-        print(f'b :\n {b}')
+        print(f'W :\n{W}')
+        print(f'b :\n{b}')
 
 
 class NeuralNetwork(object):
@@ -88,10 +88,13 @@ class NeuralNetwork(object):
         print(f'input_dim={input_dim}, num_examples={num_examples}, num_passes={num_passes}')
 
         layer1 = Layer(1, input_dim, layer_dims[0])
+        layer2 = Layer(2, layer_dims[0], layer_dims[1])
 
-        pass
-        print(print_loss)
+        for i in range(num_passes):
+            pass
+            break
         print(np.sqrt(2))
+        print(X)
 
         model = []
         return model
