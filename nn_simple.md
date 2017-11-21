@@ -214,7 +214,7 @@ $$
 
 举一个直观的例子
 
-由于手算比较耗时，这里使用mathematica进行符号计算，在mathematica中输入以下代码
+由于手算比较费时，这里使用mathematica进行符号计算，在mathematica中输入以下代码
 
 ```
 {u, n, m} = {3, 2, 5}
@@ -239,15 +239,70 @@ $$
 （2）由于输出层的输出结果与实际结果有误差，则计算估计值与实际值之间的误差，并将该误差从输出层向隐藏层反向传播，直至传播到输入层；
 （3）在反向传播的过程中，根据误差调整各种参数的值；不断迭代上述过程，直至收敛。
 
-我们把定义估计值与实际值之间误差的函数叫作误差损失(loss)函数。
+### 代价函数
 
-如果误差损失函数采用二次代价函数 ，在实际中，如果误差越大，参数调整的幅度可能更小，训练更缓慢。使用交叉熵代价函数替换二次代价函数，可以解决学习缓慢的问题。具体分析可以参考如下链接：
+我们把定义估计值与实际值之间误差(单个样本)的函数叫作误差损失(loss)函数，代价(cost)函数是各个样本的loss函数的平均。
+
+如果误差损失函数采用二次代价函数 ，在实际中，如果误差越大，参数调整的幅度可能更小，训练更缓慢。使用交叉熵代价函数替换二次代价函数，可以解决学习缓慢的问题。
+
+> 示性函数：$1\{\cdot\}$
+> 取值规则为：$1\{值为真的表达式\}=1$ ，$1\{值为假的表达式\}=0$ 。举例来说，表达式 $1\{2+2=4\}$的值为1，$1\{1+1=5\}$的值为 0。
+
+在分类问题中，交叉熵代价函数与对数似然代价函数在形式上是基本一致的。
+
+对于输出层的softmax激活函数，
+
+假设有m个样本，k个类别，将$p(x)$记为$1\{ y^{(i)} = j \}$，$q(x)$记为softmax函数的输出值
+
+则根据交叉熵公式，
+$$
+H(p,q) = - \sum_x p(x)log\ q(x)
+$$
+可以得到交叉熵代价函数为：
+$$
+J(\theta) = -\frac{1}{m} \Biggl[ \sum_{i=1}^m  \biggl[ \sum_{j=1}^k 1\{ y^{(i)} = j \} \ log \frac{e^{\theta_j^T x^{(i)}}}{ \sum_{l=1}^k e^{ \theta_l^T x^{(i)} } }  \biggl] \Biggl]
+$$
+从似然函数的角度分析，记$h_{\theta j}(x)= \frac{e^{\theta_j^T x}}{ \sum_{l=1}^k e^{ \theta_l^T x } }$  (h一般是hypothesis的缩写)，在一个样本中，对于输入x的分类结果为j的概率为
+$$
+P(y=j|x; \theta) = h_{\theta j} (x)^{ 1\{ y = j \}  }
+$$
+将所有分类的概率综合起来，则有：
+$$
+P(y|x; \theta) = \prod_{j=1}^k h_{\theta j} (x)^{ 1\{ y = j \}  }
+$$
+取似然函数为：
+$$
+\begin{align}
+L(\theta) &= \prod_{i=1}^m P(y^{(i)} | x^{(i)}; \theta) \\
+&= \prod_{i=1}^m \biggl[ \prod_{j=1}^k h_{\theta j} (x^{(i)})^{1\{ y^{(i)} = j \}} \biggl]
+\end{align}
+$$
+对数似然函数为：
+$$
+\begin{align}
+l(\theta) &= log\ L(\theta) \\
+&= \sum_{i=1}^m \biggl[ \sum_{j=1}^k 1\{ y^{(i)} = j \} \ log\ h_{\theta j} (x^{(i)})  \biggl]
+\end{align}
+$$
+
+最大似然估计就是要求得使$l(\theta)$取最大值时的$\theta$ 。一般将它乘上一个负系数**-1/m**，即：
+$$
+J(\theta) = - \frac{1}{m} l(\theta)
+$$
+则$J(\theta)$取最小值时的$\theta$为要求的最佳参数。这也就是上面的交叉熵代价函数。
+
+
+> 1. log MN = log M + log N
+> 2. 很多文献里对数都没标底数，这说明可以取任意底数，一般取2或e，取不同的底数时，对数值只相差了一个常数系数，对算法不会有影响。
+
+相关的具体分析参考如下链接：
+- [Softmax回归](http://deeplearning.stanford.edu/wiki/index.php/Softmax%E5%9B%9E%E5%BD%92)
+- [Softmax Regression](http://ufldl.stanford.edu/tutorial/supervised/SoftmaxRegression/)
+  [Softmax分类函数](http://www.jianshu.com/p/8eb17fa41164)
+- [neural_network_implementation_intermezzo02](https://github.com/peterroelants/peterroelants.github.io/blob/master/notebooks/neural_net_implementation/neural_network_implementation_intermezzo02.ipynb)
 - [Improving the way neural networks learn](http://neuralnetworksanddeeplearning.com/chap3.html)
-- http://blog.csdn.net/u014313009/article/details/51043064
-- http://blog.csdn.net/yqljxr/article/details/52075053
+- [交叉熵代价函数](http://blog.csdn.net/u014313009/article/details/51043064)
 
-
-向量化的过程是这样的
 
 ### 交叉熵代价函数 [cross-entropy loss](https://en.wikipedia.org/wiki/Cross_entropy#Cross-entropy_error_function_and_logistic_regression)
 
@@ -277,7 +332,7 @@ $$
 C = - \frac{1}{n} \sum_x [yln\ a + (1-y)ln(1-a)]
 $$
 
- 其中，x表示样本，n表示样本的总数。重新计算参数w的梯度：
+其中，x表示样本，n表示样本的总数。重新计算参数w的梯度：
 $$
 \begin{align}
 \frac{\partial C}{\partial w_j} &= -\frac{1}{n} \sum_x \Bigl( \frac{y}{\sigma(z)} -\frac{(1-y)}{1-\sigma(z)} \Bigr) \frac{\partial \sigma}{\partial w_j} \\
@@ -335,7 +390,11 @@ $$
 - [信息论的熵](http://blog.csdn.net/hguisu/article/details/27305435)
 - [Entropy](https://en.wikipedia.org/wiki/Entropy_(information_theory))
 
-3、终止条件
+### 反向传播算法
+
+向量化的过程是这样的
+
+终止条件
 偏重的更新低于某个阈值；
 预测的错误率低于某个阈值；
 达到预设一定的循环次数；
