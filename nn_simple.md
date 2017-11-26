@@ -1,6 +1,6 @@
-# 一个简单的神经网络的实现
+# 一个简单的BP神经网络的实现
 
-不详述神经网络模型，只记录一下实现神经网络时的推导过程。
+不详述神经网络模型，只记录一下实现BP神经网络时的推导过程。
 
 ## 0. 数学复习
 
@@ -298,7 +298,7 @@ $$
 相关的具体分析参考如下链接：
 - [Softmax回归](http://deeplearning.stanford.edu/wiki/index.php/Softmax%E5%9B%9E%E5%BD%92)
 - [Softmax Regression](http://ufldl.stanford.edu/tutorial/supervised/SoftmaxRegression/)
-  [Softmax分类函数](http://www.jianshu.com/p/8eb17fa41164)
+- [Softmax分类函数](http://www.jianshu.com/p/8eb17fa41164)
 - [neural_network_implementation_intermezzo02](https://github.com/peterroelants/peterroelants.github.io/blob/master/notebooks/neural_net_implementation/neural_network_implementation_intermezzo02.ipynb)
 - [Improving the way neural networks learn](http://neuralnetworksanddeeplearning.com/chap3.html)
 - [交叉熵代价函数](http://blog.csdn.net/u014313009/article/details/51043064)
@@ -392,12 +392,104 @@ $$
 
 ### 反向传播算法
 
+> 求导的链式法则 ([Chain rule](https://en.wikipedia.org/wiki/Chain_rule)) ：
+> 表达式：$(f(g(x)))^\prime = f^\prime (g(x)) g^\prime (x)$
+> 其他形式：$\frac {dy}{dx} = \frac {dy}{dz} \cdot \frac {dz}{dx}$
+
+求$J(W, b)$的最小值可以使用梯度下降法，根据梯度下降法可得$W$和$b$的更新过程：
+$$
+W^{[l]}_{[i]j} := W^{[l]}_{[i]j} - \alpha \frac{\partial}{\partial \ W^{[l]}_{[i]j}} J(W, b) \\
+b^{[l]}_{[i]} := b^{[l]}_{[i]} - \alpha \frac{\partial}{\partial \ b^{[l]}_{[i]}} J(W, b)
+$$
+其中，$\alpha$为学习步长，$W^{[l]}_{[i]j}$为第l层的第i个节点的权重第j个分量，$b^{[l]}_{[i]}$为第l层的第i个节点的偏置。
+
+#### 输出层
+
+输出层的激活函数采用的是softmax函数。根据前文，输出层的误差采用交叉熵代价函数来衡量，即：
+$$
+z_{[i]} = W_{[i]} x + b_{[i]}  \\
+a_{[i]} = h_{W_{[i]}, b_{[i]}}(z_{[i]}) = \frac{e^{z_{[i]}}}{ \sum_{k=1}^K e^{ z_k } }   \\
+J(W, b) = -\frac{1}{m} \Biggl[ \sum_{i=1}^m  \biggl[ \sum_{j=1}^k 1\{ y^{(i)} = j \} \ log \ a_{[j]}  \biggl] \Biggl]
+$$
+其中，依照前文约定，下标 [i] 为第$i$个节点的序号，上标 (i) 为样本在样本集中的序号。
+
+输出层的第$l$个节点的权重$W_{[l]}$的第$t$个分量，求导(梯度)为：
+$$
+\begin{align}
+\frac{\partial}{\partial \ W_{[l]t}} J(W, b) &= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ \frac{\partial}{\partial \ W_{[l]t}} \biggl[ \sum_{j=1}^k 1\{ y^{(i)} = j \} \ log\ a_{[j]}  \biggl] \biggl] \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ \frac{\partial}{\partial \ W_{[l]t}} \biggl( 1\{ y^{(l)} = l \} \ log\ a_{[l]}  \biggl) +  \frac{\partial}{\partial \ W_{[l]t}} \biggl( \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \ log\ a_{[j]} \biggr) \biggl] \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(l)} = l \} \biggl( \frac{\partial \ (log\ a_{[l]}) }{\partial \ a_{[l]}} \cdot \frac{\partial \ a_{[l]}}{\partial \ z_{[l]}} \cdot \frac{\partial \ z_{[l]}}{\partial \ W_{[l]t}}  \biggl) +  \biggl( \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot \frac{\partial \ (log\ a_{[j]}) }{\partial \ a_{[j]}} \cdot \frac{\partial \ a_{[j]}}{\partial \ z_{[l]}} \cdot \frac{\partial \ z_{[l]}}{\partial \ W_{[l]t}} \biggr)  \biggl] \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(l)} = l \} \biggl( \frac{1}{a_{[l]}} \cdot a_{[l]} ( 1-a_{[l]} ) \biggl) +  \biggl( \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot \frac{1}{a_{[j]}} \cdot (-a_{[j]} a_{[l]}) \biggr)  \biggl] \cdot x^{(i)}_t \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(l)} = l \} \cdot ( 1-a_{[l]} ) - \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot a_{[l]} \biggl] \cdot x^{(i)}_t \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(l)} = l \} - 1\{ y^{(l)} = l \} \cdot a_{[l]} - \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot a_{[l]} \biggl] \cdot x^{(i)}_t \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(l)} = l \} - a_{[l]} \cdot \sum_{j=1}^k 1\{ y^{(i)} = j \} \biggl] \cdot x^{(i)}_t \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl( 1\{ y^{(l)} = l \} - a_{[l]} \biggl) \cdot x^{(i)}_t \Biggl] \\
+\end{align}
+$$
+输出层的第$l$个节点的偏置$b_{[l]}$的求导(梯度)为：
+$$
+\begin{align}
+\frac{\partial}{\partial \ b_{[l]}} J(W, b) &= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ \frac{\partial}{\partial \ b_{[l]}} \biggl[ \sum_{j=1}^k 1\{ y^{(i)} = j \} \ log\ a_{[j]}  \biggl] \biggl] \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ \frac{\partial}{\partial \ b_{[l]}} \biggl( 1\{ y^{(l)} = l \} \ log\ a_{[l]}  \biggl) +  \frac{\partial}{\partial \ b_{[l]}} \biggl( \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \ log\ a_{[j]} \biggr) \biggl] \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(l)} = l \} \biggl( \frac{\partial \ (log\ a_{[l]}) }{\partial \ a_{[l]}} \cdot \frac{\partial \ a_{[l]}}{\partial \ z_{[l]}} \cdot \frac{\partial \ z_{[l]}}{\partial \ b_{[l]}}  \biggl) +  \biggl( \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot \frac{\partial \ (log\ a_{[j]}) }{\partial \ a_{[j]}} \cdot \frac{\partial \ a_{[j]}}{\partial \ z_{[l]}} \cdot \frac{\partial \ z_{[l]}}{\partial \ b_{[l]}} \biggr)  \biggl] \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(l)} = l \} \biggl( \frac{1}{a_{[l]}} \cdot a_{[l]} ( 1-a_{[l]} ) \cdot 1 \biggl) +  \biggl( \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot \frac{1}{a_{[j]}} \cdot (-a_{[j]} a_{[l]}) \cdot 1 \biggr)  \biggl] \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(l)} = l \} \cdot ( 1-a_{[l]} ) - \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot a_{[l]} \biggl] \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(l)} = l \} - 1\{ y^{(l)} = l \} \cdot a_{[l]} - \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot a_{[l]} \biggl] \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(l)} = l \} - a_{[l]} \cdot \sum_{j=1}^k 1\{ y^{(i)} = j \} \biggl] \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(l)} = l \} - a_{[l]} \biggl] \Biggl] \\
+&= a_{[l]} - 1\{ y^{(l)} = l \} \\
+\end{align}
+$$
+
+在很多的文献中，会把上式记成如下形式：
+$$
+\begin{align}
+\delta_{[l]} &= \frac{\partial \ loss(W, b) }{\partial \ z_{[l]}} =  \\
+\frac{\partial}{\partial \ W_{[l]t}} J(W, b) &= \frac{\partial \ J(W, b) }{\partial \ z_{[l]}} \cdot \frac{\partial \ z_{[l]}}{\partial \ W_{[l]t}}   \\
+
+
+
+
+
+\end{align}
+$$
+
+
+> 1. 这里log的底数用的是e
+> 2. 这里的x指的是输出层的上一层的输出
+> 3. 关于$\delta$的原文是：for each node $i$ in layer $l$, we would like to compute an “error term” $\delta^{(l)}$ that measures how much that node was “responsible” for any errors in our output ，链接在[这里](http://ufldl.stanford.edu/tutorial/supervised/MultiLayerNeuralNetworks/)
+
+#### 隐藏层
+
+隐藏层的激活函数采用的是tanh函数。
+
+先考虑只有一个隐藏层的情况，参考一下网上的这张图片，可以发现当前层的每个节点的权重和偏置会影响下一层的各个节点
+
+![1](images/1.png)
+$$
+\begin{align}
+\frac{\partial}{\partial \ W^{[1]}_{[l]t}} J(W, b) &= \frac{\partial \ J(W, b)}{\partial \ a^{[1]}_{[l]}} \cdot \frac{\partial \ a^{[1]}_{[l]}}{\partial \ z^{[1]}_{[l]}} \cdot \frac{\partial \ z^{[1]}_{[l]}}{\partial \ W^{[1]}_{[l]t}} 
+\end{align}
+$$
+
+
+
+
 向量化的过程是这样的
 
-终止条件
-偏重的更新低于某个阈值；
-预测的错误率低于某个阈值；
-达到预设一定的循环次数；
+
+
+参考
+
+https://www.zhihu.com/question/24827633/answer/91489990
+
+https://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/
+
+#### 终止条件
+
+- 偏重的更新低于某个阈值；
+- 预测的错误率低于某个阈值；
+- 达到预设一定的循环次数；
 
 ## 4. 交叉验证
 
