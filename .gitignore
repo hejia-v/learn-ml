@@ -4,3 +4,6 @@
 /tmp
 /notebook/untitled*
 
+/code/__pycache__
+/code/.idea
+**.log

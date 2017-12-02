@@ -2,20 +2,9 @@
 
 不详述神经网络模型，只记录一下实现BP神经网络时的推导过程。
 
-## 0. 数学复习
+<!--more-->
 
-矩阵A(m, n)，m指行数，n指列数
-
-sigmoid函数求导
-$$
-\begin{align}
-\sigma^\prime(z) &= \bigl( \frac{1}{1 + e^{-z}} \bigr)^\prime = (-1)(1+e^{-z})^{(-1)-1} \cdot (e^{-z})^\prime = \frac{1}{(1+e^{-z})^2} \cdot  (e^{-z}) \\
-&= \frac{1}{1+e^{-z}} \cdot \frac{e^{-z}}{1+e^{-z}} = \frac{1}{1+e^{-z}} \cdot (1-\frac{1}{1+e^{-z}}) \\
-&= \sigma(z)(1-\sigma(z))
-\end{align}
-$$
-
-## 1. 输入值和输出值
+## 输入值和输出值
 
 输入值是一个维度是n的特征向量，记作 $x=(x_1,x_2,\ldots,x_n)$。一个数据集里一般有多个样本，假定有m个样本，则将这数据集记作 $X = (x^{(1)},x^{(2)},\ldots,x^{(m)})$ 。
 
@@ -27,18 +16,24 @@ $$
 
 隐藏层的节点越多，则越复杂的函数可以fit到。但是这样做的代价也比较大，首先，会增大训练参数和进行预测的计算量。其次，大量的参数也容易导致过拟合。  需要根据具体情况选择节点的个数。
 
-## 2. 正向传播
+有一个经验公式可以确定隐含层节点数目，如下
+$$
+h=\sqrt{m+n} + a
+$$
+其中h为隐含层节点数目，m为输入层节点数目，n为输出层节点数目，a为1~10之间的调节常数。
+
+## 正向传播
+
+> 这里约定上标 (i) 为样本在样本集中的序号，上标 [i] 为神经网络的层的序号，下标 [i] 为网络中某一层的节点的序号，log的底数默认是e。
 
 神经网络使用正向传播进行预测。
-
-这里约定上标 (i) 为样本在样本集中的序号，上标 [i] 为神经网络的序号，下标 [i] 为某一隐藏层的节点的序号。
 
 对于一个3层的神经网络，可以这样计算预测值 $\hat y$ ：
 $$
 \begin{align}
-& z^{[1]} = W^{[1]}x+ b^{[1]} \\
+& z^{[1]} = xW^{[1]}+ b^{[1]} \\
 & a^{[1]} = \sigma (z^{[1]}) \\
-& z^{[2]} = W^{[2]}a^{[1]} + b^{[2]} \\
+& z^{[2]} = a^{[1]}W^{[2]} + b^{[2]} \\
 & a^{[2]} = \hat y = softmax (z^{[2]}) \\
 \end{align}
 $$
@@ -68,83 +63,84 @@ $$
 假设第2层有u个节点，则这层的权重和偏置为
 $$
 W^{[1]} = \begin{pmatrix}
-        w_{1[1]} & w_{2[1]} & \cdots & w_{n[1]} \\
-        w_{1[2]} & w_{2[2]} & \cdots & w_{n[2]} \\
+        w_{1[1]} & w_{1[2]} & \cdots & w_{1[u]} \\
+        w_{2[1]} & w_{2[2]} & \cdots & w_{2[u]} \\
         \vdots     & \vdots    & \ddots & \vdots \\
-        w_{1[u]} & w_{2[u]} & \cdots & w_{n[u]} \\
-        \end{pmatrix} = \begin{pmatrix}
-        w_{[1]} \\ w_{[2]} \\ \vdots \\ w_{[u]} \\
-        \end{pmatrix} , \qquad b^{[1]} = \begin{pmatrix}
-        b_{[1]} \\
-        b_{[2]} \\
-        \vdots \\
-        b_{[u]} \\
-        \end{pmatrix}
+        w_{n[1]} & w_{n[2]} & \cdots & w_{n[u]} \\
+        \end{pmatrix} 
+        = \begin{pmatrix}
+        w_{[1]} & w_{[2]} &  \ldots & w_{[u]} 
+        \end{pmatrix} , \qquad 
+b^{[1]} = \begin{pmatrix}
+        b_{[1]} & b_{[2]} & \ldots & b_{[u]} \end{pmatrix}
 $$
 根据矩阵的分块的性质
 $$
 \begin{align}
-W^{[1]}X^T &= \begin{pmatrix}
-        w_{[1]} \\ w_{[2]} \\ \vdots \\ w_{[u]} \\
-        \end{pmatrix} \begin{pmatrix}
-        x^{(1)} & x^{(2)} & \ldots & x^{(m)} \\
-        \end{pmatrix} = AB = \begin{pmatrix}
-        A_{11} \\ A_{21} \\ \vdots \\ A_{u1} \\
+XW^{[1]} &= \begin{pmatrix}
+        x^{(1)} \\ x^{(2)} \\ \vdots \\ x^{(m)} \\
+        \end{pmatrix}
+	\begin{pmatrix}
+        w_{[1]} & w_{[2]} &  \ldots & w_{[u]} 
+        \end{pmatrix} = 
+AB = \begin{pmatrix}
+        A_{11} \\ A_{21} \\ \vdots \\ A_{m1} \\
         \end{pmatrix}  \begin{pmatrix}
-        B_{11} & B_{12} & \ldots & B_{1m} \\
+        B_{11} & B_{12} & \ldots & B_{1u} \\
         \end{pmatrix} \\
        & = \begin{pmatrix}
-        C_{11} & C_{12} & \cdots & C_{1m} \\
-        C_{21} & C_{22} & \cdots & C_{2m} \\
+        C_{11} & C_{12} & \cdots & C_{1u} \\
+        C_{21} & C_{22} & \cdots & C_{2u} \\
         \vdots     & \vdots    & \ddots & \vdots \\
-        C_{u1} & C_{u2} & \cdots & C_{um} \\
-        \end{pmatrix} = \begin{pmatrix}
-        A_{11}B_{11} & A_{11}B_{12} & \cdots & A_{11}B_{1m} \\
-        A_{21}B_{11} & A_{21}B_{12} & \cdots & A_{21}B_{1m} \\
+        C_{m1} & C_{m2} & \cdots & C_{mu} \\
+        \end{pmatrix} 
+        = \begin{pmatrix}
+        A_{11}B_{11} & A_{11}B_{12} & \cdots & A_{11}B_{1u} \\
+        A_{21}B_{11} & A_{21}B_{12} & \cdots & A_{21}B_{1u} \\
         \vdots     & \vdots    & \ddots & \vdots \\
-        A_{u1}B_{11} & A_{u1}B_{12} & \cdots & A_{u1}B_{1m} \\
+        A_{m1}B_{11} & A_{m1}B_{12} & \cdots & A_{m1}B_{1u} \\
         \end{pmatrix}  \\
         & =  \begin{pmatrix}
-        w_{[1]}x^{(1)} & w_{[1]}x^{(2)} & \cdots & w_{[1]}x^{(m)} \\
-        w_{[2]}x^{(1)} & w_{[2]}x^{(2)} & \cdots & w_{[2]}x^{(m)} \\
+        x^{(1)}w_{[1]} & x^{(1)}w_{[2]} & \cdots & x^{(1)}w_{[u]} \\
+        x^{(2)}w_{[1]} & x^{(2)}w_{[2]} & \cdots & x^{(2)}w_{[u]} \\
         \vdots     & \vdots    & \ddots & \vdots \\
-        w_{[u]}x^{(1)} & w_{[u]}x^{(2)} & \cdots & w_{[u]}x^{(m)} \\
+        x^{(m)}w_{[1]} & x^{(m)}w_{[2]} & \cdots & x^{(m)}w_{[u]} \\
         \end{pmatrix}
 \end{align}
 $$
 参考numpy中的boardcast，则有
 $$
 \begin{align}
-z^{[1]} &= W^{[1]}X^T + boardcast\ (b^{[1]}) =  \begin{pmatrix}
-        w_{[1]}x^{(1)} + b_{[1]} & w_{[1]}x^{(2)} + b_{[1]} & \cdots & w_{[1]}x^{(m)} + b_{[1]} \\
-        w_{[2]}x^{(1)} + b_{[2]} & w_{[2]}x^{(2)} + b_{[2]} & \cdots & w_{[2]}x^{(m)} + b_{[2]} \\
+z^{[1]} &= XW^{[1]} + boardcast\ (b^{[1]}) =  \begin{pmatrix}
+        x^{(1)}w_{[1]} + b_{[1]} & x^{(1)}w_{[2]} + b_{[2]} & \cdots & x^{(1)}w_{[u]} + b_{[u]} \\
+        x^{(2)}w_{[1]} + b_{[1]} & x^{(2)}w_{[2]} + b_{[2]} & \cdots & x^{(2)}w_{[u]} + b_{[u]} \\
         \vdots     & \vdots    & \ddots & \vdots \\
-        w_{[u]}x^{(1)} + b_{[u]} & w_{[u]}x^{(2)} + b_{[u]} & \cdots & w_{[u]}x^{(m)} + b_{[u]} \\
+        x^{(m)}w_{[1]} + b_{[1]} & x^{(m)}w_{[2]} + b_{[2]} & \cdots & x^{(m)}w_{[u]} + b_{[u]} \\
         \end{pmatrix} \\
         & =  \begin{pmatrix}
-        z_{[1]}^{(1)} & z_{[1]}^{(2)} & \cdots & z_{[1]}^{(m)} \\
-        z_{[2]}^{(1)} & z_{[2]}^{(2)} & \cdots & z_{[2]}^{(m)} \\
+        z_{[1]}^{(1)} & z_{[2]}^{(1)} & \cdots & z_{[u]}^{(1)} \\
+        z_{[1]}^{(2)} & z_{[2]}^{(2)} & \cdots & z_{[u]}^{(2)} \\
         \vdots     & \vdots    & \ddots & \vdots \\
-        z_{[u]}^{(1)} & z_{[u]}^{(2)} & \cdots & z_{[u]}^{(m)} \\
+        z_{[1]}^{(m)} & z_{[2]}^{(m)} & \cdots & z_{[u]}^{(m)} \\
         \end{pmatrix}
 \end{align}
 $$
 
 $$
 a^{[1]} =  \begin{pmatrix}
-        \sigma(z_{[1]}^{(1)}) & \sigma(z_{[1]}^{(2)}) & \cdots & \sigma(z_{[1]}^{(m)}) \\
-        \sigma(z_{[2]}^{(1)}) & \sigma(z_{[2]}^{(2)}) & \cdots & \sigma(z_{[2]}^{(m)}) \\
+        \sigma(z_{[1]}^{(1)}) & \sigma(z_{[2]}^{(1)}) & \cdots & \sigma(z_{[u]}^{(1)}) \\
+        \sigma(z_{[1]}^{(2)}) & \sigma(z_{[2]}^{(2)}) & \cdots & \sigma(z_{[u]}^{(2)}) \\
         \vdots     & \vdots    & \ddots & \vdots \\
-        \sigma(z_{[u]}^{(1)}) & \sigma(z_{[u]}^{(2)}) & \cdots & \sigma(z_{[u]}^{(m)}) \\
+        \sigma(z_{[1]}^{(m)}) & \sigma(z_{[2]}^{(m)}) & \cdots & \sigma(z_{[u]}^{(m)}) \\
         \end{pmatrix}
 $$
 
-以上的计算方式可以推广到多层神经网络中的任一隐藏层，对于第l层，将 $X$ 类比成 $a^{[l-1]}$ ， $W^{[1]}$ 类比成 $W^{[l]}$ ， $b^{[1]}$ 类比成 $b^{[l]}$ ， $z^{[1]}$ 类比成 $z^{[l]}$ ， $a^{[1]}$ 类比成 $a^{[l]}$ ，就可以了。
+以上的计算方式可以推广到多层神经网络中的任一隐藏层，对于第$l$层，将 $X$ 类比成 $a^{[l-1]}$ ， $W^{[1]}$ 类比成 $W^{[l]}$ ， $b^{[1]}$ 类比成 $b^{[l]}$ ， $z^{[1]}$ 类比成 $z^{[l]}$ ， $a^{[1]}$ 类比成 $a^{[l]}$ ，就可以了。
 
 对于输出层，因为我们希望网络输出各个分类的概率，所以将输出层的激活函数选为[softmax](https://en.wikipedia.org/wiki/Softmax_function) 。softmax 是一种简便的将原始评分转换成概率的方法。可以将 softmax 看做 logistic 函数的在多分类下的推广。
 $$
-a^{[2]} =  softmax (z^{[1]}) = \begin{pmatrix}
-        softmax(z^{(1)}) & softmax(z^{(2)}) & \ldots & softmax(z^{(m)}) \\
+a^{[2]} =  softmax (z^{[2]}) = \begin{pmatrix}
+        softmax(z^{[2](1)}) \\ softmax(z^{[2](2)}) \\ \vdots \\ softmax(z^{[2](m)}) \\
         \end{pmatrix}
 $$
 
@@ -153,17 +149,17 @@ $$
 
 权重 w 不能全部置为0，这样会导致每个层的所有节点的计算都是相同的。如果激活函数使用sigmoid或者tanh，随机出来的 w 最好小一点，一般乘以0.01。因为如果 w 比较大，通过激活函数计算出来的值会落到接近1的位置，导致学习速度变慢。
 
-偏置 b 可以全部初始化为0。
+偏置 b 可以全部初始化为0，但是推荐初始值不为0。
 
 ### 激活函数
 
-- [tanh](https://reference.wolfram.com/language/ref/Tanh.html)
+- [tanh](https://en.wikipedia.org/wiki/Hyperbolic_function#Tanh)
 - [sigmoid function](https://en.wikipedia.org/wiki/Sigmoid_function)
-- [ReLUs](https://en.wikipedia.org/wiki/Rectifier_(neural_networks))
+- <a href="https://en.wikipedia.org/wiki/Rectifier_(neural_networks)">ReLUs</a>
 
-### softmax ([wiki](https://en.wikipedia.org/wiki/Softmax_function))
+### softmax
 
-softmax 又称为归一化指数函数，是广义上的 logistic 函数。假设k 维向量 $z$ 的各项是任意实数，使用 softmax 对 $z$ 进行“压缩”处理后，压缩后的向量 $\sigma (z)$ 的每一项的值在 [0, 1] 之间，所有项之和等于1。函数公式如下
+[softmax](https://en.wikipedia.org/wiki/Softmax_function) 又称为归一化指数函数，是广义上的 logistic 函数。假设k 维向量 $z$ 的各项是任意实数，使用 softmax 对 $z$ 进行“压缩”处理后，压缩后的向量 $\sigma (z)$ 的每一项的值在 [0, 1] 之间，所有项之和等于1。函数公式如下
 $$
 \sigma (z)_j = \frac {e^{z_j}}{ \sum_{k=1}^K e^{z_k} } \quad  for\ j = 1, \ldots, K.
 $$
@@ -208,33 +204,9 @@ $$
 \end{align}
 $$
 
+## 反向传播
 
-
-### 例子 (TODO)
-
-举一个直观的例子
-
-由于手算比较费时，这里使用mathematica进行符号计算，在mathematica中输入以下代码
-
-```
-{u, n, m} = {3, 2, 5}
-Array[Subscript[w, ##] &, {u, n}] . Array[Subscript[x, ##] &, {n, m}]
-```
-
-得到结果
-$$
-\left(
-\begin{array}{ccccc}
- w_{1,1} x_{1,1}+w_{1,2} x_{2,1} & w_{1,1} x_{1,2}+w_{1,2} x_{2,2} & w_{1,1} x_{1,3}+w_{1,2} x_{2,3} & w_{1,1} x_{1,4}+w_{1,2} x_{2,4} & w_{1,1} x_{1,5}+w_{1,2} x_{2,5} \\
- w_{2,1} x_{1,1}+w_{2,2} x_{2,1} & w_{2,1} x_{1,2}+w_{2,2} x_{2,2} & w_{2,1} x_{1,3}+w_{2,2} x_{2,3} & w_{2,1} x_{1,4}+w_{2,2} x_{2,4} & w_{2,1} x_{1,5}+w_{2,2} x_{2,5} \\
- w_{3,1} x_{1,1}+w_{3,2} x_{2,1} & w_{3,1} x_{1,2}+w_{3,2} x_{2,2} & w_{3,1} x_{1,3}+w_{3,2} x_{2,3} & w_{3,1} x_{1,4}+w_{3,2} x_{2,4} & w_{3,1} x_{1,5}+w_{3,2} x_{2,5} \\
-\end{array}
-\right)
-$$
-
-## 3. 反向传播
-
-反向传播是目前用来训练人工神经网络的最常用且最有效的算法。其主要思想是：
+反向传播主要思想是：
 （1）将训练集数据输入到输入层，经过隐藏层，最后达到输出层并输出结果，这是前向传播过程；
 （2）由于输出层的输出结果与实际结果有误差，则计算估计值与实际值之间的误差，并将该误差从输出层向隐藏层反向传播，直至传播到输入层；
 （3）在反向传播的过程中，根据误差调整各种参数的值；不断迭代上述过程，直至收敛。
@@ -250,9 +222,7 @@ $$
 
 在分类问题中，交叉熵代价函数与对数似然代价函数在形式上是基本一致的。
 
-对于输出层的softmax激活函数，
-
-假设有m个样本，k个类别，将$p(x)$记为$1\{ y^{(i)} = j \}$，$q(x)$记为softmax函数的输出值
+对于输出层的softmax激活函数，假设有m个样本，k个类别，将$p(x)$记为$1\{ y^{(i)} = j \}$，$q(x)$记为softmax函数的输出值
 
 则根据交叉熵公式，
 $$
@@ -293,7 +263,7 @@ $$
 
 
 > 1. log MN = log M + log N
-> 2. 很多文献里对数都没标底数，这说明可以取任意底数，一般取2或e，取不同的底数时，对数值只相差了一个常数系数，对算法不会有影响。
+> 2. 很多文献里对数都没标底数，这说明可以取任意底数，一般取e或2，取不同的底数时，对数值只相差了一个常数系数，对算法不会有影响。
 
 相关的具体分析参考如下链接：
 - [Softmax回归](http://deeplearning.stanford.edu/wiki/index.php/Softmax%E5%9B%9E%E5%BD%92)
@@ -312,7 +282,7 @@ $$
 $$
 C = \frac {1}{2n} \sum_x \| y(x) - a^L(x) \|^2
 $$
-其中，C表示代价，x表示样本，y表示实际值，a表示输出值，n表示样本的总数。为简单起见，同样一个样本为例进行说明，此时二次代价函数为：
+其中，C表示代价，x表示样本，y表示实际值，a表示输出值，n表示样本的总数。为简单起见，以一个样本为例进行说明，此时二次代价函数为：
 $$
 C = \frac {(y-a)^2}{2}
 $$
@@ -335,7 +305,7 @@ $$
 其中，x表示样本，n表示样本的总数。重新计算参数w的梯度：
 $$
 \begin{align}
-\frac{\partial C}{\partial w_j} &= -\frac{1}{n} \sum_x \Bigl( \frac{y}{\sigma(z)} -\frac{(1-y)}{1-\sigma(z)} \Bigr) \frac{\partial \sigma}{\partial w_j} \\
+\frac{\partial C}{\partial w_j} &= -\frac{1}{n} \sum_x \Bigl( \frac{y}{\sigma(z)} -\frac{(1-y)}{1-\sigma(z)} \Bigr) \frac{\partial \sigma(z)}{\partial w_j} \\
 &= -\frac{1}{n} \sum_x \Bigl( \frac{y}{\sigma(z)} -\frac{(1-y)}{1-\sigma(z)} \Bigr) \sigma^\prime(z)x_j \\
 &= \frac{1}{n} \sum_x  \frac{ \sigma^\prime(z)x_j }{\sigma(z) (1-\sigma(z))} (\sigma(z)-y) \\
 &= \frac{1}{n} \sum_x  x_j (\sigma(z)-y) \\
@@ -388,11 +358,11 @@ $$
 - [Cross entropy](https://en.wikipedia.org/wiki/Cross_entropy)
 - [怎样理解 Cross Entropy](http://shuokay.com/2017/06/23/cross-entropy/)
 - [信息论的熵](http://blog.csdn.net/hguisu/article/details/27305435)
-- [Entropy](https://en.wikipedia.org/wiki/Entropy_(information_theory))
+- <a href="https://en.wikipedia.org/wiki/Entropy_(information_theory)">Entropy</a>
 
 ### 反向传播算法
 
-> 求导的链式法则 ([Chain rule](https://en.wikipedia.org/wiki/Chain_rule)) ：
+> 求导的链式法则 ([Chain rule](https://en.wikipedia.org/wiki/Chain_rule))：
 > 表达式：$(f(g(x)))^\prime = f^\prime (g(x)) g^\prime (x)$
 > 其他形式：$\frac {dy}{dx} = \frac {dy}{dz} \cdot \frac {dz}{dx}$
 
@@ -407,50 +377,53 @@ $$
 
 输出层的激活函数采用的是softmax函数。根据前文，输出层的误差采用交叉熵代价函数来衡量，即：
 $$
-z_{[i]} = W_{[i]} x + b_{[i]}  \\
-a_{[i]} = h_{W_{[i]}, b_{[i]}}(z_{[i]}) = \frac{e^{z_{[i]}}}{ \sum_{k=1}^K e^{ z_k } }   \\
-J(W, b) = -\frac{1}{m} \Biggl[ \sum_{i=1}^m  \biggl[ \sum_{j=1}^k 1\{ y^{(i)} = j \} \ log \ a_{[j]}  \biggl] \Biggl]
+x = a ^{[1]}\\
+z_{[j]}^{[2]} = xW_{[j]}^{[2]} + b_{[j]}^{[2]}  \\
+a_{[j]}^{[2]} = \frac{e^{z_{[j]}^{[2]}}}{ \sum_{k=1}^K e^{ z_{[k]}^{[2]} } }   \\
+J(W, b) = -\frac{1}{m} \Biggl[ \sum_{i=1}^m  \biggl[ \sum_{j=1}^k 1\{ y^{(i)} = j \} \ log \ a_{[j]}^{[2]}  \biggl] \Biggl]
 $$
-其中，依照前文约定，下标 [i] 为第$i$个节点的序号，上标 (i) 为样本在样本集中的序号。
+其中，依照前文约定，下标 [j] 为第$j$个节点的序号，上标 (i) 为样本在样本集中的序号。
 
-输出层的第$l$个节点的权重$W_{[l]}$的第$t$个分量，求导(梯度)为：
+输出层的第$l$个节点的权重$W_{[l]}$的第$t$个分量，求导(梯度)为：(为了简化公式，没有加上标$[2]$，a和z没有加上标$(i)$)
 $$
 \begin{align}
 \frac{\partial}{\partial \ W_{[l]t}} J(W, b) &= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ \frac{\partial}{\partial \ W_{[l]t}} \biggl[ \sum_{j=1}^k 1\{ y^{(i)} = j \} \ log\ a_{[j]}  \biggl] \biggl] \Biggl] \\
-&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ \frac{\partial}{\partial \ W_{[l]t}} \biggl( 1\{ y^{(l)} = l \} \ log\ a_{[l]}  \biggl) +  \frac{\partial}{\partial \ W_{[l]t}} \biggl( \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \ log\ a_{[j]} \biggr) \biggl] \Biggl] \\
-&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(l)} = l \} \biggl( \frac{\partial \ (log\ a_{[l]}) }{\partial \ a_{[l]}} \cdot \frac{\partial \ a_{[l]}}{\partial \ z_{[l]}} \cdot \frac{\partial \ z_{[l]}}{\partial \ W_{[l]t}}  \biggl) +  \biggl( \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot \frac{\partial \ (log\ a_{[j]}) }{\partial \ a_{[j]}} \cdot \frac{\partial \ a_{[j]}}{\partial \ z_{[l]}} \cdot \frac{\partial \ z_{[l]}}{\partial \ W_{[l]t}} \biggr)  \biggl] \Biggl] \\
-&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(l)} = l \} \biggl( \frac{1}{a_{[l]}} \cdot a_{[l]} ( 1-a_{[l]} ) \biggl) +  \biggl( \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot \frac{1}{a_{[j]}} \cdot (-a_{[j]} a_{[l]}) \biggr)  \biggl] \cdot x^{(i)}_t \Biggl] \\
-&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(l)} = l \} \cdot ( 1-a_{[l]} ) - \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot a_{[l]} \biggl] \cdot x^{(i)}_t \Biggl] \\
-&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(l)} = l \} - 1\{ y^{(l)} = l \} \cdot a_{[l]} - \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot a_{[l]} \biggl] \cdot x^{(i)}_t \Biggl] \\
-&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(l)} = l \} - a_{[l]} \cdot \sum_{j=1}^k 1\{ y^{(i)} = j \} \biggl] \cdot x^{(i)}_t \Biggl] \\
-&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl( 1\{ y^{(l)} = l \} - a_{[l]} \biggl) \cdot x^{(i)}_t \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ \frac{\partial}{\partial \ z_{[l]}} \biggl[ \sum_{j=1}^k 1\{ y^{(i)} = j \} \ log\ a_{[j]}  \biggl] \biggl] \cdot \frac{\partial \ z_{[l]}}{\partial \ W_{[l]t}} \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ \frac{\partial}{\partial \ z_{[l]}} \biggl[ \sum_{j=1}^k 1\{ y^{(i)} = j \} \ log\ a_{[j]}  \biggl] \biggl] \cdot x^{(i)}_t \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ \frac{\partial}{\partial \ z_{[l]}} \biggl( 1\{ y^{(i)} = l \} \ log\ a_{[l]}  \biggl) +  \frac{\partial}{\partial \ z_{[l]}} \biggl( \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \ log\ a_{[j]} \biggr) \biggl] \cdot x^{(i)}_t \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(i)} = l \} \biggl( \frac{\partial \ (log\ a_{[l]}) }{\partial \ a_{[l]}} \cdot \frac{\partial \ a_{[l]}}{\partial \ z_{[l]}} \biggl) +  \biggl( \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot \frac{\partial \ (log\ a_{[j]}) }{\partial \ a_{[j]}} \cdot \frac{\partial \ a_{[j]}}{\partial \ z_{[l]}} \biggr)  \biggl] \cdot x^{(i)}_t \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(i)} = l \} \biggl( \frac{1}{a_{[l]}} \cdot a_{[l]} ( 1-a_{[l]} ) \biggl) +  \biggl( \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot \frac{1}{a_{[j]}} \cdot (-a_{[j]} a_{[l]}) \biggr)  \biggl] \cdot x^{(i)}_t \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(i)} = l \} \cdot ( 1-a_{[l]} ) - \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot a_{[l]} \biggl] \cdot x^{(i)}_t \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(i)} = l \} - 1\{ y^{(i)} = l \} \cdot a_{[l]} - \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot a_{[l]} \biggl] \cdot x^{(i)}_t \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(i)} = l \} - a_{[l]} \cdot \sum_{j=1}^k 1\{ y^{(i)} = j \} \biggl] \cdot x^{(i)}_t \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl( 1\{ y^{(i)} = l \} - a_{[l]} \biggl) \cdot x^{(i)}_t \Biggl] \\
 \end{align}
 $$
-输出层的第$l$个节点的偏置$b_{[l]}$的求导(梯度)为：
+输出层的第$l$个节点的偏置$b_{[l]}$的求导(梯度)为：(为了简化公式，没有加上标$[2]$，a和z没有加上标$(i)$)
 $$
 \begin{align}
 \frac{\partial}{\partial \ b_{[l]}} J(W, b) &= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ \frac{\partial}{\partial \ b_{[l]}} \biggl[ \sum_{j=1}^k 1\{ y^{(i)} = j \} \ log\ a_{[j]}  \biggl] \biggl] \Biggl] \\
-&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ \frac{\partial}{\partial \ b_{[l]}} \biggl( 1\{ y^{(l)} = l \} \ log\ a_{[l]}  \biggl) +  \frac{\partial}{\partial \ b_{[l]}} \biggl( \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \ log\ a_{[j]} \biggr) \biggl] \Biggl] \\
-&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(l)} = l \} \biggl( \frac{\partial \ (log\ a_{[l]}) }{\partial \ a_{[l]}} \cdot \frac{\partial \ a_{[l]}}{\partial \ z_{[l]}} \cdot \frac{\partial \ z_{[l]}}{\partial \ b_{[l]}}  \biggl) +  \biggl( \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot \frac{\partial \ (log\ a_{[j]}) }{\partial \ a_{[j]}} \cdot \frac{\partial \ a_{[j]}}{\partial \ z_{[l]}} \cdot \frac{\partial \ z_{[l]}}{\partial \ b_{[l]}} \biggr)  \biggl] \Biggl] \\
-&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(l)} = l \} \biggl( \frac{1}{a_{[l]}} \cdot a_{[l]} ( 1-a_{[l]} ) \cdot 1 \biggl) +  \biggl( \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot \frac{1}{a_{[j]}} \cdot (-a_{[j]} a_{[l]}) \cdot 1 \biggr)  \biggl] \Biggl] \\
-&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(l)} = l \} \cdot ( 1-a_{[l]} ) - \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot a_{[l]} \biggl] \Biggl] \\
-&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(l)} = l \} - 1\{ y^{(l)} = l \} \cdot a_{[l]} - \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot a_{[l]} \biggl] \Biggl] \\
-&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(l)} = l \} - a_{[l]} \cdot \sum_{j=1}^k 1\{ y^{(i)} = j \} \biggl] \Biggl] \\
-&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(l)} = l \} - a_{[l]} \biggl] \Biggl] \\
-&= a_{[l]} - 1\{ y^{(l)} = l \} \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ \frac{\partial}{\partial \ z_{[l]}} \biggl[ \sum_{j=1}^k 1\{ y^{(i)} = j \} \ log\ a_{[j]}  \biggl] \biggl] \cdot \frac{\partial \ z_{[l]}}{\partial \ b_{[l]}} \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ \frac{\partial}{\partial \ z_{[l]}} \biggl( 1\{ y^{(i)} = l \} \ log\ a_{[l]}  \biggl) +  \frac{\partial}{\partial \ z_{[l]}} \biggl( \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \ log\ a_{[j]} \biggr) \biggl] \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(i)} = l \} \biggl( \frac{\partial \ (log\ a_{[l]}) }{\partial \ a_{[l]}} \cdot \frac{\partial \ a_{[l]}}{\partial \ z_{[l]}} \biggl) +  \biggl( \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot \frac{\partial \ (log\ a_{[j]}) }{\partial \ a_{[j]}} \cdot \frac{\partial \ a_{[j]}}{\partial \ z_{[l]}}  \biggr)  \biggl] \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(i)} = l \} \biggl( \frac{1}{a_{[l]}} \cdot a_{[l]} ( 1-a_{[l]} ) \biggl) +  \biggl( \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot \frac{1}{a_{[j]}} \cdot (-a_{[j]} a_{[l]}) \biggr)  \biggl] \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(i)} = l \} \cdot ( 1-a_{[l]} ) - \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot a_{[l]} \biggl] \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(i)} = l \} - 1\{ y^{(i)} = l \} \cdot a_{[l]} - \sum_{j=1,j \neq l}^k 1\{ y^{(i)} = j \} \cdot a_{[l]} \biggl] \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(i)} = l \} - a_{[l]} \cdot \sum_{j=1}^k 1\{ y^{(i)} = j \} \biggl] \Biggl] \\
+&= -\frac{1}{m} \Biggl[ \sum_{i=1}^m \biggl[ 1\{ y^{(i)} = l \} - a_{[l]} \biggl] \Biggl] \\
 \end{align}
 $$
 
-在很多的文献中，会把上式记成如下形式：
+在很多的文献中，会把上式记成如下形式，其中上标(i)表示是第i个样本：
 $$
 \begin{align}
-\delta_{[l]} &= \frac{\partial \ loss(W, b) }{\partial \ z_{[l]}} =  \\
-\frac{\partial}{\partial \ W_{[l]t}} J(W, b) &= \frac{\partial \ J(W, b) }{\partial \ z_{[l]}} \cdot \frac{\partial \ z_{[l]}}{\partial \ W_{[l]t}}   \\
-
-
-
-
-
+\delta_{[l]}^{[2](i)} &= \frac{\partial \ E^{(i)} }{\partial \ z_{[l]}^{[2](i)}} = \frac{\partial}{ \partial \ z_{[l]}^{[2](i)} } \biggl[- \sum_{j=1}^k 1\{ y^{(i)} = j \} \ log\ a_{[j]}^{[2](i)}  \biggl]  = a_{[l]}^{[2](i)} - 1\{ y^{(i)} = l \} \\
+\frac{\partial}{\partial \ W_{[l]t}^{[2]}} J(W, b) &= \frac{\partial  }{\partial \ W_{[l]t}^{[2]} } (\frac{1}{m} \sum_{i=1}^m E^{(i)})  
+= \frac{1}{m} \sum_{i=1}^m ( \frac{\partial \ E^{(i)} }{\partial \ z_{[l]}^{[2](i)}} \cdot \frac{\partial \ z_{[l]}^{[2](i)}}{\partial \ W_{[l]t}^{[2]}} )       
+=  \frac{1}{m} \sum_{i=1}^m ( \delta_{[l]}^{[2](i)} \cdot a_t^{[1](i)} )       \\
+\frac{\partial}{\partial \ b_{[l]}^{[2]}} J(W, b) &= \frac{\partial  }{\partial \ b_{[l]}^{[2]} } (\frac{1}{m} \sum_{i=1}^m E^{(i)})  
+= \frac{1}{m} \sum_{i=1}^m ( \frac{\partial \ E^{(i)} }{\partial \ z_{[l]}^{[2](i)}} \cdot \frac{\partial \ z_{[l]}^{[2](i)}}{\partial \ b_{[l]}^{[2]}} )       
+=  \frac{1}{m} \sum_{i=1}^m  \delta_{[l]}^{[2](i)}        \\
 \end{align}
 $$
 
@@ -463,44 +436,226 @@ $$
 
 隐藏层的激活函数采用的是tanh函数。
 
-先考虑只有一个隐藏层的情况，参考一下网上的这张图片，可以发现当前层的每个节点的权重和偏置会影响下一层的各个节点
+先考虑只有一个隐藏层的情况，参考下面这张图片，可以发现当前层的每个节点的权重和偏置会影响下一层的各个节点
 
-![1](images/1.png)
+![1](/images/learn-ml-2.png)
 $$
 \begin{align}
-\frac{\partial}{\partial \ W^{[1]}_{[l]t}} J(W, b) &= \frac{\partial \ J(W, b)}{\partial \ a^{[1]}_{[l]}} \cdot \frac{\partial \ a^{[1]}_{[l]}}{\partial \ z^{[1]}_{[l]}} \cdot \frac{\partial \ z^{[1]}_{[l]}}{\partial \ W^{[1]}_{[l]t}} 
+& z^{[1]} = xW^{[1]}+ b^{[1]} \\
+& a^{[1]} = \sigma (z^{[1]}) = tanh(z^{(i)}) \\
+& z^{[2]} = a^{[1]}W^{[2]} + b^{[2]} \\
+& a^{[2]} = \hat y = softmax (z^{[2]}) \\
 \end{align}
 $$
 
+$$
+\begin{align}
+\frac{\partial}{\partial \ W^{[1]}_{[v]t}} J(W, b) &= \frac{\partial}{ \partial \ W^{[1]}_{[v]t} } \bigl( \frac{1}{m} \sum_{i=1}^m E^{(i)} \bigr) \\
+&= \frac{1}{m} \sum_{i=1}^m \biggl[ \frac{\partial}{ \partial \ W^{[1]}_{[v]t} } E^{(i)} \biggr] \\
+&= \frac{1}{m} \sum_{i=1}^m \biggl[ \frac{\partial \ E^{(i)}}{ \partial \ a^{[1](i)}_{[v]} } \cdot  \frac{\partial \ a^{[1](i)}_{[v]}}{\partial \ z^{[1](i)}_{[v]}} \cdot \frac{\partial \ z^{[1](i)}_{[v]}}{\partial \ W^{[1]}_{[v]t}} \biggr] \\
+&= \frac{1}{m} \sum_{i=1}^m \biggl[ ( \sum_o \biggl[ \frac{\partial \ E^{(i)} }{ \partial \ z^{[2](i)}_{[o]} } \cdot \frac{\partial \ z_{[o]}^{[2](i)} }{ \partial \ a^{[1](i)}_{[v]} } \biggr] ) \cdot \frac{\partial \ a^{[1](i)}_{[v]}}{\partial \ z^{[1](i)}_{[v]}} \cdot \frac{\partial \ z^{[1](i)}_{[v]}}{\partial \ W^{[1]}_{[v]t}} \biggr] \quad \text{(multivariate chain rule)}\\
+&= \frac{1}{m} \sum_{i=1}^m \biggl[ ( \sum_o \biggl[ \delta_{[o]}^{[2](i)} \cdot W_{[o]v}^{[2]} \biggr] ) \cdot (1 - (z_{[v]}^{[1](i)})^2 ) \cdot x_t^{(i)} \biggr] \\
+\end{align}
+$$
 
+$$
+\begin{align}
+\frac{\partial}{\partial \ b^{[1]}_{[v]}} J(W, b) &= \frac{\partial}{ \partial \ b^{[1]}_{[v]} } \bigl( \frac{1}{m} \sum_{i=1}^m E^{(i)} \bigr) \\
+&= \frac{1}{m} \sum_{i=1}^m \biggl[ \frac{\partial}{ \partial \ b^{[1]}_{[v]} } E^{(i)} \biggr] \\
+&= \frac{1}{m} \sum_{i=1}^m \biggl[ \frac{\partial \ E^{(i)}}{ \partial \ a^{[1](i)}_{[v]} } \cdot  \frac{\partial \ a^{[1](i)}_{[v]}}{\partial \ z^{[1](i)}_{[v]}} \cdot \frac{\partial \ z^{[1](i)}_{[v]}}{\partial \ b^{[1]}_{[v]}} \biggr] \\
+&= \frac{1}{m} \sum_{i=1}^m \biggl[ ( \sum_o \biggl[ \frac{\partial \ E^{(i)} }{ \partial \ z^{[2](i)}_{[o]} } \cdot \frac{\partial \ z_{[o]}^{[2](i)} }{ \partial \ a^{[1](i)}_{[v]} } \biggl] ) \cdot \frac{\partial \ a^{[1](i)}_{[v]}}{\partial \ z^{[1](i)}_{[v]}} \cdot \frac{\partial \ z^{[1](i)}_{[v]}}{\partial \ b^{[1]}_{[v]}} \biggr] \quad \text{(multivariate chain rule)}\\
+&= \frac{1}{m} \sum_{i=1}^m \biggl[ ( \sum_o \biggl[ \delta_{[o]}^{[2](i)} \cdot W_{[o]v}^{[2]} \biggl] ) \cdot (1 - (z_{[v]}^{[1](i)})^2 ) \biggr] \\
+\end{align}
+$$
 
+按照输出层的$\delta$的定义，可以定义任意一层的$\delta$，并在计算的时候将本层的$\delta$传递给下一层，从而计算各层的权重和偏置的导数。
 
-向量化的过程是这样的
+> 几个变量相互之间有依赖关系，这时某个变量的偏导数不能反映变化率，要表示在该变量上的变化率，应该使用该变量的全导数。变量相互独立时，偏导数可以表示变化率。
 
-
-
-参考
-
-https://www.zhihu.com/question/24827633/answer/91489990
-
-https://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/
+参考链接：
+- [Total derivative]( https://en.wikipedia.org/wiki/Total_derivative#Differentiation_with_indirect_dependencies)
+- [如何理解神经网络里面的反向传播算法](https://www.zhihu.com/question/24827633/answer/91489990)
+- [A Step by Step Backpropagation Example](https://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/)
 
 #### 终止条件
 
-- 偏重的更新低于某个阈值；
+- 权重的更新低于某个阈值；
 - 预测的错误率低于某个阈值；
 - 达到预设一定的循环次数；
 
-## 4. 交叉验证
+#### 向量化
 
-如何计算准确率？最简单的方法是通过一组训练集和测试集，训练集通过训练得到模型，将测试集输入模型得到测试结果，将测试结果和测试集的真实标签进行比较，得到准确率。
-在机器学习领域一个常用的方法是交叉验证方法。一组数据不分成2份，可能分为10份，
-第1次：第1份作为测试集，剩余9份作为训练集；
-第2次：第2份作为测试集，剩余9份作为训练集；
-......
-这样经过10次训练，得到10组准确率，将这10组数据求平均值得到平均准确率的结果。这里10是特例。一般意义上将数据分为k份，称该算法为K-fold cross validation，即每一次选择k份中的一份作为测试集，剩余k-1份作为训练集，重复k次，最终得到平均准确率，是一种比较科学准确的方法。
+下面这张图描述了正向传播时，各变量的维度
+
+![1](/images/learn-ml-3.png)
+
+其中$x$的横线表示$x$可以看做是由一组横向量组成的，$W$的竖线表示$W$可以看做是由一组竖向量组成的。
+
+## 附录
+
+### 反向传播的一种错误求导
+
+在隐藏层的反向传播求导时，下面的求导方式是错误的：
+$$
+\begin{align}
+\frac{\partial \ E^{(i)}}{ \partial \ a^{[1](i)}_{[v]} }
+&=  \sum_o \bigl[ \frac{\partial \ E_{[o]}^{(i)} }{ \partial \ z^{[2](i)}_{[o]} } \cdot \frac{\partial \ z_{[o]}^{[2](i)} }{ \partial \ a^{[1](i)}_{[v]} } \bigr]  \\
+\end{align}
+$$
+
+原因是$z_{[o]}^{(i)[2]}$对所有的$E_{[j]}^{(i)}$都有影响，而这里只考虑了与$z_{[o]}^{(i)[2]}$相对应的$E_{[o]}^{(i)}$。
+
+输出层的求导是没问题的，因为考虑了所有的分量。
+
+### 数学复习
+
+1. 矩阵A(m, n)，m指行数，n指列数
+2. sigmoid函数求导
+
+$$
+\begin{align}
+\sigma^\prime(z) &= \bigl( \frac{1}{1 + e^{-z}} \bigr)^\prime = (-1)(1+e^{-z})^{(-1)-1} \cdot (e^{-z})^\prime = \frac{1}{(1+e^{-z})^2} \cdot  (e^{-z}) \\
+&= \frac{1}{1+e^{-z}} \cdot \frac{e^{-z}}{1+e^{-z}} = \frac{1}{1+e^{-z}} \cdot (1-\frac{1}{1+e^{-z}}) \\
+&= \sigma(z)(1-\sigma(z))
+\end{align}
+$$
+
+### 使用数学软件
+
+在一些推导中，特别是矩阵的计算，想直观的看一下展开后的结果，如果完全手算，会比较费时，可以使用mathematica进行符号计算。例如，计算矩阵的相乘，在mathematica中输入以下代码
+
+```
+{u, n, m} = {3, 2, 5}
+Array[Subscript[w, ##] &, {u, n}] . Array[Subscript[x, ##] &, {n, m}]
+```
+
+得到结果
+$$
+\left(
+\begin{array}{ccccc}
+ w_{1,1} x_{1,1}+w_{1,2} x_{2,1} & w_{1,1} x_{1,2}+w_{1,2} x_{2,2} & w_{1,1} x_{1,3}+w_{1,2} x_{2,3} & w_{1,1} x_{1,4}+w_{1,2} x_{2,4} & w_{1,1} x_{1,5}+w_{1,2} x_{2,5} \\
+ w_{2,1} x_{1,1}+w_{2,2} x_{2,1} & w_{2,1} x_{1,2}+w_{2,2} x_{2,2} & w_{2,1} x_{1,3}+w_{2,2} x_{2,3} & w_{2,1} x_{1,4}+w_{2,2} x_{2,4} & w_{2,1} x_{1,5}+w_{2,2} x_{2,5} \\
+ w_{3,1} x_{1,1}+w_{3,2} x_{2,1} & w_{3,1} x_{1,2}+w_{3,2} x_{2,2} & w_{3,1} x_{1,3}+w_{3,2} x_{2,3} & w_{3,1} x_{1,4}+w_{3,2} x_{2,4} & w_{3,1} x_{1,5}+w_{3,2} x_{2,5} \\
+\end{array}
+\right)
+$$
+
+## 代码
+
+下面是3层bp神经网络的python实现，取自[这里](http://www.wildml.com/2015/09/implementing-a-neural-network-from-scratch/)，我做了一些修改
+
+```python
+# -*- coding:utf-8 -*-
+import time
+import numpy as np
+from sklearn import datasets
+import matplotlib.pyplot as plt
 
 
+def generate_data():
+    np.random.seed(0)
+    X, y = datasets.make_moons(200, noise=0.20)
+    return X, y
 
 
+def visualize(X, y, model):
+    x_min, x_max = X[:, 0].min() - .5, X[:, 0].max() + .5
+    y_min, y_max = X[:, 1].min() - .5, X[:, 1].max() + .5
+    h = 0.01
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
+                         np.arange(y_min, y_max, h))
+    Z = predict(model, np.c_[xx.ravel(), yy.ravel()])
+    Z = Z.reshape(xx.shape)
+    plt.contourf(xx, yy, Z, cmap=plt.cm.Spectral)
+    plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
+    plt.show()
+    plt.title("bp nn")
+
+
+def predict(model, x):
+    layer1, layer2 = model
+    feedforward(x, layer1)
+    feedforward(layer1.a, layer2, True)
+    return np.argmax(layer2.a, axis=1)
+
+
+class Layer(object):
+    def __init__(self, last_layer_dim: int, dim: int):
+        self.W = np.random.randn(last_layer_dim, dim) / np.sqrt(last_layer_dim)
+        self.b = np.zeros((1, dim))
+        self.z = None
+        self.a = None
+        self.delta = None
+        self.dW = None
+        self.db = None
+
+
+def softmax(X):  # m行dim列
+    exp_scores = np.exp(X)
+    probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
+    return probs
+
+def feedforward(x: np.ndarray, layer: Layer, is_final: bool=False):
+    layer.z = x.dot(layer.W) + layer.b  # m行dim列
+    if is_final:
+        layer.a = softmax(layer.z)
+    else:
+        layer.a = np.tanh(layer.z)
+
+
+def backprop(x: np.ndarray, y: np.ndarray, layer: Layer, nextlayer: Layer, 
+             num_examples: int, is_final: bool=False):
+    if is_final:
+        delta = layer.a
+        delta[range(num_examples), y] -= 1 # m行dim列, a_{[l]}^{(i)} - 1{y_{(i)}=l}
+        # layer.dW = (x.T).dot(delta) / num_examples
+        # layer.db = np.sum(delta, axis=0, keepdims=True) / num_examples
+        layer.dW = (x.T).dot(delta)
+        layer.db = np.sum(delta, axis=0, keepdims=True)
+        layer.delta = delta
+    else:
+        delta = nextlayer.delta.dot(nextlayer.W.T) * (1 - np.power(layer.a, 2))  # * 对应元素相乘
+        # layer.dW = np.dot(x.T, delta) / num_examples
+        # layer.db = np.sum(delta, axis=0, keepdims=True) / num_examples
+        layer.dW = np.dot(x.T, delta)
+        layer.db = np.sum(delta, axis=0, keepdims=True)
+        layer.delta = delta
+    learn_rate = 0.01
+    layer.W += -learn_rate * layer.dW
+    layer.b += -learn_rate * layer.db
+
+
+def build_model(X, y, nn_hdim, num_passes=20000, print_loss=False):
+    num_examples = len(X)
+    np.random.seed(0)
+    input_dim = X.shape[1]
+    nn_output_dim = 2
+
+    layer1 = Layer(input_dim, nn_hdim)
+    layer2 = Layer(nn_hdim, nn_output_dim)
+
+    for i in range(0, num_passes):
+        feedforward(X, layer1)
+        feedforward(layer1.a, layer2, True)
+
+        backprop(layer1.a, y, layer2, None, num_examples, True)
+        backprop(X, y, layer1, layer2, num_examples)
+
+    model = [layer1, layer2]
+    return model
+
+
+def main():
+    X, y = generate_data()
+    start_time = time.time()
+    model = build_model(X, y, 3)
+    time_cost = time.time() - start_time
+    summary = f'cost: {time_cost}'
+    print(summary)
+    visualize(X, y, model)
+
+
+if __name__ == "__main__":
+    main()
+```
 
